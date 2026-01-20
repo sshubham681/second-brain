@@ -2,6 +2,9 @@ import express from "express";
 import { version } from "./config.js";
 import { connectToDB } from "./db.js";
 import { UserModel } from "./schema.js";
+import z from "zod";
+import bcrypt from "bcrypt";
+import { signUpSchema } from "./zod/zodSchema.js";
 
 const app = express();
 app.use(express.json());
@@ -10,9 +13,16 @@ connectToDB();
 
 // signup route
 app.post(`/api/${version}/signup`, async (req, res) => {
-  const { username, password } = req.body;
-  console.log(username, password);
   // zod validation
+  const result = signUpSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Invalid input",
+      error: result.error.flatten().fieldErrors,
+    });
+  }
+  const { username, password } = result.data;
+  console.log(username, password);
   // hash the password using library
   // store the hashed password in db
 
@@ -32,12 +42,6 @@ app.post(`/api/${version}/signin`, async (req, res) => {
   console.log(process.env.JWT_SECRET);
   res.send({
     existingUser,
-  });
-});
-
-app.get("/", (req, res) => {
-  res.json({
-    message: "Test Route",
   });
 });
 
